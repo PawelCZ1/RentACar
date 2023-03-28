@@ -1,4 +1,4 @@
-﻿namespace Investments.Models.Db;
+﻿namespace RentACar.Models.Db;
 
 public class ReservationEntity : BaseEntity
 {

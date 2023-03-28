@@ -1,4 +1,4 @@
-﻿namespace Investments.Models.Enum;
+﻿namespace RentACar.Models.Enum;
 
 public enum GearboxType
 {

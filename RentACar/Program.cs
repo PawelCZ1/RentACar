@@ -1,4 +1,4 @@
-using Investments.Data;
+using RentACar.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,10 +12,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddEntityFrameworkNpgsql()
     .AddDbContext<ApiDatabaseContext>(opt =>
         opt.UseNpgsql(builder.Configuration.GetConnectionString("RentACarConnection")));
-
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

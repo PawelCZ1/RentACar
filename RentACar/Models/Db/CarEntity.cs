@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Investments.Models.Enum;
+using RentACar.Models.Enum;
 
-namespace Investments.Models.Db;
+namespace RentACar.Models.Db;
 
 public class CarEntity : BaseEntity
 {

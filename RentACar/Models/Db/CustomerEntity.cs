@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Investments.Models.Db;
+namespace RentACar.Models.Db;
 
 public class CustomerEntity : BaseEntity
 {
@@ -12,6 +12,7 @@ public class CustomerEntity : BaseEntity
     [Required]
     public double Balance { get; set; }
     public DateTime BirthDate { get; set; }
+    public DateTime RegistrationDate { get; set; }
     public virtual ICollection<ReservationEntity> ReservationEntities { get; set; }
 
 
