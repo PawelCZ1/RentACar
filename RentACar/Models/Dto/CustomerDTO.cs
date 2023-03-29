@@ -1,6 +1,6 @@
 ﻿namespace RentACar.Models.Dto;
 
-public class CustomerDTO
+public class CustomerDTO : BaseDTO
 {
     public string Name { get; set; }
     public string Surname { get; set; }

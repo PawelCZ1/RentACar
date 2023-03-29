@@ -2,7 +2,7 @@
 
 namespace RentACar.Models.Dto;
 
-public class CarDTO
+public class CarDTO : BaseDTO
 {
     public string Brand { get; set; }
     public string Model { get; set; }
