@@ -12,10 +12,13 @@ public class CarEntity : BaseEntity
     [Required]
     public string Colour { get; set; }
     [Required]
+    [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public FuelType FuelType { get; set; }
     [Required]
+    [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public GearboxType GearboxType { get; set; }
     [Required]
+    [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public AirConditioningType AirConditioningType { get; set; }
     [Required]
     public DateTime ProductionDate { get; set; }

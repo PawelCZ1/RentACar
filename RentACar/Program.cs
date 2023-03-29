@@ -11,7 +11,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddEntityFrameworkNpgsql()
     .AddDbContext<ApiDatabaseContext>(opt =>
-        opt.UseNpgsql(builder.Configuration.GetConnectionString("RentACarConnection")));
+    {
+        opt.UseNpgsql(builder.Configuration.GetConnectionString("RentACarConnection"));
+        opt.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    });
+        
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();

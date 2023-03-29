@@ -65,7 +65,7 @@ public class CustomerController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<CustomerDTO>> RegisterCustomer([FromBody] CustomerDTO customerDTO)
+    public async Task<ActionResult<APIResponse>> RegisterCustomer([FromBody] CustomerDTO customerDTO)
     {
         if (await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Name == customerDTO.Name && e.Surname == customerDTO.Surname) != null)
         {
@@ -120,6 +120,43 @@ public class CustomerController : ControllerBase
         _response = new APIResponse(HttpStatusCode.OK, true,
             null, "Customer with id: " + id + " was removed from database");
         return Ok(_response);
-    }  
+    }
+
+    [HttpPut("{id:int}", Name = "UpdateCustomer")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<APIResponse>> UpdateCustomer(int id, [FromBody] CustomerDTO customerDTO)
+    {
+        if (id != customerDTO.Id)
+        {
+            _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                new List<string> { "DTO id does not match route id" }, null);
+            return BadRequest(_response);
+        }
+        
+        if (customerDTO == null)
+        {
+            _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                new List<string> { "Provided registration data is incorrect" }, null);
+            return BadRequest(_response);
+        }
+        
+        var entity = await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Id == id);
+
+        if (entity == null)
+        {
+            _response = new APIResponse(HttpStatusCode.NotFound, false,
+                new List<string> { "Customer with id: " + id + " is not registered" }, null);
+            return NotFound(_response);
+        }
+
+        var model = _mapper.Map<CustomerEntity>(customerDTO);
+        _db.CustomerEntities.Update(model);
+        await _db.SaveChangesAsync();
+        _response = new APIResponse(HttpStatusCode.OK, true,
+            null, "Customer with id: " + id + " was updated successfully");
+        return Ok(_response);
+    }
 
 }
