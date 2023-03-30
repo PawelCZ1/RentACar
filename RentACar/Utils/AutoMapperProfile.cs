@@ -13,7 +13,9 @@ public class AutoMapperProfile : Profile
         CreateMap<CustomerDTO, CustomerEntity>()
             .ForMember(dest => dest.RegistrationDate,
                 opt => opt.MapFrom(src => DateTime.UtcNow));
-        CreateMap<CarDTO, CarEntity>();
+        CreateMap<CarDTO, CarEntity>()
+            .ForMember(dest => dest.RegistrationDate,
+            opt => opt.MapFrom(src => DateTime.UtcNow));
         CreateMap<ReservationDTO, ReservationEntity>();
         
         // Entity => DTO

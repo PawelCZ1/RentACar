@@ -12,16 +12,13 @@ public class CarEntity : BaseEntity
     [Required]
     public string Colour { get; set; }
     [Required]
-    [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public FuelType FuelType { get; set; }
     [Required]
-    [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public GearboxType GearboxType { get; set; }
     [Required]
-    [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public AirConditioningType AirConditioningType { get; set; }
     [Required]
-    public DateTime ProductionDate { get; set; }
+    public int ProductionYear { get; set; }
     [Required]
     public byte NumberOfSeats { get; set; }
     [Required]
@@ -30,6 +27,7 @@ public class CarEntity : BaseEntity
     public double PricePerDay { get; set; }
     [Required]
     public bool Availability { get; set; }
+    public DateTime RegistrationDate { get; set; }
     public virtual ICollection<ReservationEntity> ReservationEntities { get; set; }
     
     
