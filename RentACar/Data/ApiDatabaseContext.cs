@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RentACar.Models.Db;
 using RentACar.Models.Enum;
+using RentACar.Utils;
 
 namespace RentACar.Data;
 
@@ -12,10 +13,7 @@ public class ApiDatabaseContext : DbContext
         AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
     }
     
-    private static T StringToEnum<T>(string value) where T : struct
-    {
-        return Enum.TryParse<T>(value, out var result) ? result : default;
-    }
+    
     
     
     public DbSet<CustomerEntity> CustomerEntities { get; set; }
@@ -35,19 +33,19 @@ public class ApiDatabaseContext : DbContext
         modelBuilder.Entity<CarEntity>().Property(e => e.FuelType)
             .HasConversion(
                 v => v.ToString(),
-                v => StringToEnum<FuelType>(v)
+                v => CommonMethods.StringToEnum<FuelType>(v)
             );
         
         modelBuilder.Entity<CarEntity>().Property(e => e.GearboxType)
             .HasConversion(
                 v => v.ToString(),
-                v => StringToEnum<GearboxType>(v)
+                v => CommonMethods.StringToEnum<GearboxType>(v)
             );
         
         modelBuilder.Entity<CarEntity>().Property(e => e.AirConditioningType)
             .HasConversion(
                 v => v.ToString(),
-                v => StringToEnum<AirConditioningType>(v)
+                v => CommonMethods.StringToEnum<AirConditioningType>(v)
             );
         
         modelBuilder.Entity<CustomerEntity>().HasData(
