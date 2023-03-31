@@ -1,3 +1,4 @@
+using Investments.Services;
 using RentACar.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,7 @@ builder.Services.AddEntityFrameworkNpgsql()
     });
         
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.

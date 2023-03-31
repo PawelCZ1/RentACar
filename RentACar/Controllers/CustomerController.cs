@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using AutoMapper;
 using Investments.Models.Api;
+using Investments.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentACar.Data;
@@ -14,23 +15,19 @@ namespace RentACar.Controllers;
 public class CustomerController : ControllerBase
 {
     private APIResponse _response;
-    private readonly ApiDatabaseContext _db;
-    private readonly IMapper _mapper;
+    private readonly ICustomerService _service;
 
-    public CustomerController(ApiDatabaseContext db, IMapper mapper)
+    public CustomerController(ICustomerService service)
     {
-        _db = db;
-        _mapper = mapper;
-        
+        _service = service;
     }
     
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<APIResponse>> GetCustomers()
     {
-        var response = await _db.CustomerEntities.ToListAsync();
-        var mappedResponse = _mapper.Map<List<CustomerDTO>>(response);
-        _response = new APIResponse(HttpStatusCode.OK, true, null, mappedResponse);
+        var result = await _service.GetCustomers();
+        _response = new APIResponse(HttpStatusCode.OK, true, null, result);
         return Ok(_response);
     }
 
@@ -38,97 +35,113 @@ public class CustomerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> GetCustomer(int id)
     {
-        if (id == 0)
+        try
         {
-            //ModelState.AddModelError("WrongId","Id cannot equal 0");
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "Id cannot equal 0" }, null);
-            return BadRequest(_response);
+            var result = await _service.GetCustomer(id);
+            _response = new APIResponse(HttpStatusCode.OK, true, null, result);
+            return Ok(_response);
         }
-
-        var response = await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Id == id);
-        if (response == null)
+        catch (Exception e)
         {
-            //ModelState.AddModelError("CustomerNotRegistered","Customer with id: " + id + " is not registered");
-            _response = new APIResponse(HttpStatusCode.NotFound, false,
-                new List<string> { "Customer with id: " + id + " is not registered" }, null);
-            return NotFound(_response);
+            if (e.Message.Equals("Id cannot equal 0"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
+            if (e.Message.Equals("Customer with id: " + id + " is not registered"))
+            {
+                _response = new APIResponse(HttpStatusCode.NotFound, false,
+                    new List<string> { e.Message }, null);
+                return NotFound(_response);
+            }
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
         }
-
-        var mappedResponse = _mapper.Map<CustomerDTO>(response);
-        _response = new APIResponse(HttpStatusCode.OK, true, null, mappedResponse);
-        return Ok(_response);
     }
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> RegisterCustomer([FromBody] CustomerDTO customerDTO)
     {
-        if (await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Name == customerDTO.Name && e.Surname == customerDTO.Surname) != null)
+        try
         {
-            //ModelState.AddModelError("CustomerAlreadyRegistered","This customer is already registered");
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "This customer is already registered" }, null);
-            return BadRequest(_response);
+            var result = await _service.RegisterCustomer(customerDTO);
+            _response = new APIResponse(HttpStatusCode.Created, true, null, result);
+            return CreatedAtRoute("GetCustomer", new {id = result.Id}, _response);
         }
-
-        if (customerDTO == null || customerDTO.Id != 0)
+        catch (Exception e)
         {
-            //ModelState.AddModelError("IncorrectRegistrationData", "Provided registration data is incorrect");
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "Provided registration data is incorrect" }, null);
-            return BadRequest(_response);
-        }
-        
-        var entity = _mapper.Map<CustomerEntity>(customerDTO);
+            if (e.Message.Equals("This customer is already registered"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
 
-        await _db.CustomerEntities.AddAsync(entity);
-        await _db.SaveChangesAsync();
-        var lastId = await _db.CustomerEntities.MaxAsync(e => e.Id);
-        customerDTO.Id = lastId;
-        _response = new APIResponse(HttpStatusCode.Created, true, null, customerDTO);
-        return CreatedAtRoute("GetCustomer", new {id = lastId}, _response);
+            if (e.Message.Equals("Provided registration data is incorrect"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
+            
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
+        }
     }
 
     [HttpDelete("{id:int}", Name = "DeleteCustomer")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> DeleteCustomer(int id)
     {
-        if (id <= 0)
+        try
         {
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "Id cannot be equal or lesser than 0" }, null);
-            return BadRequest(_response);
+            var result = await _service.DeleteCustomer(id);
+            _response = new APIResponse(HttpStatusCode.OK, true,
+                null, result);
+            return Ok(_response);
         }
-
-        var entity = await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Id == id);
-
-        if (entity == null)
+        catch (Exception e)
         {
-            _response = new APIResponse(HttpStatusCode.NotFound, false,
-                new List<string> { "Customer with id: " + id + " is not registered" }, null);
-            return NotFound(_response);
-        }
+            if (e.Message.Equals("Id cannot be equal or lesser than 0"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
 
-        _db.CustomerEntities.Remove(entity);
-        await _db.SaveChangesAsync();
-        _response = new APIResponse(HttpStatusCode.OK, true,
-            null, "Customer with id: " + id + " was removed from database");
-        return Ok(_response);
+            if (e.Message.Equals("Customer with id: " + id + " is not registered"))
+            {
+                _response = new APIResponse(HttpStatusCode.NotFound, false,
+                    new List<string> { e.Message }, null);
+                return NotFound(_response);
+            }
+            
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
+        }
     }
 
     [HttpPut("{id:int}", Name = "UpdateCustomer")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> UpdateCustomer(int id, [FromBody] CustomerDTO customerDTO)
     {
-        if (id != customerDTO.Id)
+        /*if (id != customerDTO.Id)
         {
             _response = new APIResponse(HttpStatusCode.BadRequest, false,
                 new List<string> { "DTO id does not match route id" }, null);
@@ -156,7 +169,41 @@ public class CustomerController : ControllerBase
         await _db.SaveChangesAsync();
         _response = new APIResponse(HttpStatusCode.OK, true,
             null, "Customer with id: " + id + " was updated successfully");
-        return Ok(_response);
+        return Ok(_response);*/
+        try
+        {
+            var result = await _service.UpdateCustomer(id, customerDTO);
+            _response = new APIResponse(HttpStatusCode.OK, true,
+                null, result);
+            return Ok(_response);
+        }
+        catch (Exception e)
+        {
+            if (e.Message.Equals("DTO id does not match route id"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
+
+            if (e.Message.Equals("Provided registration data is incorrect"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
+
+            if (e.Message.Equals("Customer with id: " + id + " is not registered"))
+            {
+                _response = new APIResponse(HttpStatusCode.NotFound, false,
+                    new List<string> { e.Message }, null);
+                return NotFound(_response);
+            }
+            
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
+        }
     }
 
 }
