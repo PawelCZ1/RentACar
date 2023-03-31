@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using AutoMapper;
 using Investments.Models.Api;
+using Investments.Repositories;
 using Microsoft.EntityFrameworkCore;
 using RentACar.Data;
 using RentACar.Models.Db;
@@ -10,20 +11,20 @@ namespace Investments.Services;
 
 public class CustomerService : ICustomerService
 {
-    private readonly ApiDatabaseContext _db;
     private readonly IMapper _mapper;
+    private readonly ICustomerRepository _customerRepository;
 
-    public CustomerService(ApiDatabaseContext db, IMapper mapper)
+    public CustomerService(IMapper mapper, ICustomerRepository customerRepository)
     {
-        _db = db;
         _mapper = mapper;
+        _customerRepository = customerRepository;
     }
 
     public async Task<IEnumerable<CustomerDTO>> GetCustomers()
     {
-        var response = await _db.CustomerEntities.ToListAsync();
-        var mappedResponse = _mapper.Map<List<CustomerDTO>>(response);
-        return mappedResponse;
+        var result = await _customerRepository.GetCustomers();
+        var mappedResult = _mapper.Map<List<CustomerDTO>>(result);
+        return mappedResult;
     }
 
     public async Task<CustomerDTO> GetCustomer(int id)
@@ -33,19 +34,19 @@ public class CustomerService : ICustomerService
             throw new Exception("Id cannot equal 0");
         }
 
-        var response = await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Id == id);
-        if (response == null)
+        var result = await _customerRepository.GetCustomer(id);
+        if (result == null)
         {
             throw new Exception("Customer with id: " + id + " is not registered");
         }
 
-        var mappedResponse = _mapper.Map<CustomerDTO>(response);
-        return mappedResponse;
+        var mappedResult = _mapper.Map<CustomerDTO>(result);
+        return mappedResult;
     }
 
     public async Task<CustomerDTO> RegisterCustomer(CustomerDTO customerDTO)
     {
-        if (await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Name == customerDTO.Name && e.Surname == customerDTO.Surname) != null)
+        if (await _customerRepository.CustomerNameValidation(customerDTO))
         {
             throw new Exception("This customer is already registered");
         }
@@ -57,9 +58,9 @@ public class CustomerService : ICustomerService
         
         var entity = _mapper.Map<CustomerEntity>(customerDTO);
 
-        await _db.CustomerEntities.AddAsync(entity);
-        await _db.SaveChangesAsync();
-        var lastId = await _db.CustomerEntities.MaxAsync(e => e.Id);
+        await _customerRepository.RegisterCustomer(entity);
+        await _customerRepository.SaveChanges();
+        var lastId = await _customerRepository.LastCustomerId();
         customerDTO.Id = lastId;
         return customerDTO;
     }
@@ -71,15 +72,15 @@ public class CustomerService : ICustomerService
             throw new Exception("Id cannot be equal or lesser than 0");
         }
 
-        var entity = await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Id == id);
+        var entity = await _customerRepository.GetCustomer(id);
 
         if (entity == null)
         {
             throw new Exception("Customer with id: " + id + " is not registered");
         }
 
-        _db.CustomerEntities.Remove(entity);
-        await _db.SaveChangesAsync();
+        _customerRepository.RemoveCustomer(entity);
+        await _customerRepository.SaveChanges();
         return "Customer with id: " + id + " was removed from database";
     }
 
@@ -95,7 +96,7 @@ public class CustomerService : ICustomerService
             throw new Exception("Provided registration data is incorrect");
         }
         
-        var entity = await _db.CustomerEntities.FirstOrDefaultAsync(e => e.Id == id);
+        var entity = await _customerRepository.GetCustomer(id);
 
         if (entity == null)
         {
@@ -103,8 +104,8 @@ public class CustomerService : ICustomerService
         }
 
         var model = _mapper.Map<CustomerEntity>(customerDTO);
-        _db.CustomerEntities.Update(model);
-        await _db.SaveChangesAsync();
+        _customerRepository.UpdateCustomer(model);
+        await _customerRepository.SaveChanges();
         return "Customer with id: " + id + " was updated successfully";
     }
 }
