@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using AutoMapper;
 using Investments.Models.Api;
+using Investments.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentACar.Data;
@@ -16,20 +17,21 @@ public class CarController : ControllerBase
     private APIResponse _response;
     private readonly ApiDatabaseContext _db;
     private readonly IMapper _mapper;
+    private readonly ICarService _service;
 
-    public CarController(ApiDatabaseContext db, IMapper mapper)
+    public CarController(ApiDatabaseContext db, IMapper mapper, ICarService service)
     {
         _db = db;
         _mapper = mapper;
+        _service = service;
     }
     
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<APIResponse>> GetCars()
     {
-        var response = await _db.CarEntities.ToListAsync();
-        var mappedResponse = _mapper.Map<List<CarDTO>>(response);
-        _response = new APIResponse(HttpStatusCode.OK, true, null, mappedResponse);
+        var result = await _service.GetCars();
+        _response = new APIResponse(HttpStatusCode.OK, true, null, result);
         return Ok(_response);
     }
 
@@ -37,31 +39,41 @@ public class CarController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> GetCar(int id)
     {
-        if (id == 0)
+        try
         {
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "Id cannot equal 0" }, null);
-            return BadRequest(_response);
+            var result = await _service.GetCar(id);
+            _response = new APIResponse(HttpStatusCode.OK, true, null, result);
+            return Ok(_response);
         }
-
-        var response = await _db.CarEntities.FirstOrDefaultAsync(e => e.Id == id);
-        if (response == null)
+        catch (Exception e)
         {
-            _response = new APIResponse(HttpStatusCode.NotFound, false,
-                new List<string> { "Car with id: " + id + " is not registered" }, null);
-            return NotFound(_response);
-        }
+            if (e.Message.Equals("Id cannot equal 0"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
 
-        var mappedResponse = _mapper.Map<CarDTO>(response);
-        _response = new APIResponse(HttpStatusCode.OK, true, null, mappedResponse);
-        return Ok(_response);
+            if (e.Message.Equals("Car with id: " + id + " is not registered"))
+            {
+                _response = new APIResponse(HttpStatusCode.NotFound, false,
+                    new List<string> { e.Message }, null);
+                return NotFound(_response);
+            }
+            
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
+        }
     }
     
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> RegisterCar([FromBody] CarDTO carDTO)
     {
         
@@ -86,6 +98,7 @@ public class CarController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> DeleteCar(int id)
     {
         if (id <= 0)
@@ -115,6 +128,7 @@ public class CarController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> UpdateCar(int id, [FromBody] CarDTO carDTO)
     {
         if (id != carDTO.Id)
