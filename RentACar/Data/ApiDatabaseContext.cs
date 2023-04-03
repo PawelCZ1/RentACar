@@ -5,9 +5,9 @@ using RentACar.Utils;
 
 namespace RentACar.Data;
 
-public class ApiDatabaseContext : DbContext
+public class APIDatabaseContext : DbContext
 {
-    public ApiDatabaseContext(DbContextOptions options) : base(options)
+    public APIDatabaseContext(DbContextOptions options) : base(options)
     {
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);

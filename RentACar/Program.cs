@@ -12,7 +12,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddEntityFrameworkNpgsql()
-    .AddDbContext<ApiDatabaseContext>(opt =>
+    .AddDbContext<APIDatabaseContext>(opt =>
     {
         opt.UseNpgsql(builder.Configuration.GetConnectionString("RentACarConnection"));
         opt.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
@@ -21,6 +21,8 @@ builder.Services.AddEntityFrameworkNpgsql()
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICarService, CarService>();
+builder.Services.AddScoped<ICarRepository, CarRepository>();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.

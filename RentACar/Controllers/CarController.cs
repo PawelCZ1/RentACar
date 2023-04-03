@@ -15,14 +15,10 @@ namespace RentACar.Controllers;
 public class CarController : ControllerBase
 {
     private APIResponse _response;
-    private readonly ApiDatabaseContext _db;
-    private readonly IMapper _mapper;
     private readonly ICarService _service;
 
-    public CarController(ApiDatabaseContext db, IMapper mapper, ICarService service)
+    public CarController(APIDatabaseContext db, IMapper mapper, ICarService service)
     {
-        _db = db;
-        _mapper = mapper;
         _service = service;
     }
     
@@ -76,22 +72,25 @@ public class CarController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> RegisterCar([FromBody] CarDTO carDTO)
     {
-        
-        if (carDTO == null || carDTO.Id != 0)
+        try
         {
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "Provided registration data is incorrect" }, null);
-            return BadRequest(_response);
+            var result = await _service.RegisterCar(carDTO);
+            _response = new APIResponse(HttpStatusCode.Created, true, null, result);
+            return CreatedAtRoute("GetCar", new {id = result.Id}, _response);
         }
-        
-        var entity = _mapper.Map<CarEntity>(carDTO);
-
-        await _db.CarEntities.AddAsync(entity);
-        await _db.SaveChangesAsync();
-        var lastId = await _db.CarEntities.MaxAsync(e => e.Id);
-        carDTO.Id = lastId;
-        _response = new APIResponse(HttpStatusCode.Created, true, null, carDTO);
-        return CreatedAtRoute("GetCar", new {id = lastId}, _response);
+        catch (Exception e)
+        {
+            if (e.Message.Equals("Provided registration data is incorrect"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
+            
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
+        }
     }
     
     [HttpDelete("{id:int}", Name = "DeleteCar")]
@@ -101,27 +100,33 @@ public class CarController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> DeleteCar(int id)
     {
-        if (id <= 0)
+        try
         {
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "Id cannot be equal or lesser than 0" }, null);
-            return BadRequest(_response);
+            var result = await _service.DeleteCar(id);
+            _response = new APIResponse(HttpStatusCode.OK, true,
+                null, result);
+            return Ok(_response);
         }
-
-        var entity = await _db.CarEntities.FirstOrDefaultAsync(e => e.Id == id);
-
-        if (entity == null)
+        catch (Exception e)
         {
-            _response = new APIResponse(HttpStatusCode.NotFound, false,
-                new List<string> { "Car with id: " + id + " is not registered" }, null);
-            return NotFound(_response);
-        }
+            if (e.Message.Equals("Id cannot be equal or lesser than 0"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                    new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
 
-        _db.CarEntities.Remove(entity);
-        await _db.SaveChangesAsync();
-        _response = new APIResponse(HttpStatusCode.OK, true,
-            null, "Car with id: " + id + " was removed from database");
-        return Ok(_response);
+            if (e.Message.Equals("Car with id: " + id + " is not registered"))
+            {
+                _response = new APIResponse(HttpStatusCode.NotFound, false,
+                    new List<string> { e.Message }, null);
+                return NotFound(_response);
+            }
+            
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
+        }
     }
     
     [HttpPut("{id:int}", Name = "UpdateCar")]
@@ -131,35 +136,40 @@ public class CarController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<APIResponse>> UpdateCar(int id, [FromBody] CarDTO carDTO)
     {
-        if (id != carDTO.Id)
+        try
         {
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "DTO id does not match route id" }, null);
-            return BadRequest(_response);
+            var result = await _service.UpdateCar(id, carDTO);
+            _response = new APIResponse(HttpStatusCode.OK, true,
+            null, result);
+            return Ok(_response);
         }
-        
-        if (carDTO == null)
+        catch(Exception e)
         {
-            _response = new APIResponse(HttpStatusCode.BadRequest, false,
-                new List<string> { "Provided registration data is incorrect" }, null);
-            return BadRequest(_response);
-        }
-        
-        var entity = await _db.CarEntities.FirstOrDefaultAsync(e => e.Id == id);
+            if(e.Message.Equals("DTO id does not match route id"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
 
-        if (entity == null)
-        {
-            _response = new APIResponse(HttpStatusCode.NotFound, false,
-                new List<string> { "Car with id: " + id + " is not registered" }, null);
-            return NotFound(_response);
-        }
+            if(e.Message.Equals("Provided registration data is incorrect"))
+            {
+                _response = new APIResponse(HttpStatusCode.BadRequest, false,
+                new List<string> { e.Message }, null);
+                return BadRequest(_response);
+            }
 
-        var model = _mapper.Map<CarEntity>(carDTO);
-        _db.CarEntities.Update(model);
-        await _db.SaveChangesAsync();
-        _response = new APIResponse(HttpStatusCode.OK, true,
-            null, "Car with id: " + id + " was updated successfully");
-        return Ok(_response);
+            if(e.Message.Equals("Car with id: " + id + " is not registered"))
+            {
+                _response = new APIResponse(HttpStatusCode.NotFound, false,
+                new List<string> { e.Message }, null);
+                return NotFound(_response);
+            }
+
+            _response = new APIResponse(HttpStatusCode.InternalServerError, false,
+                new List<string> { e.Message }, null);
+            return StatusCode(StatusCodes.Status500InternalServerError, _response);
+        }
     }
 
 

@@ -9,9 +9,9 @@ namespace Investments.Repositories;
 
 public class CustomerRepository : ICustomerRepository
 {
-    private readonly ApiDatabaseContext _db;
+    private readonly APIDatabaseContext _db;
 
-    public CustomerRepository(ApiDatabaseContext db)
+    public CustomerRepository(APIDatabaseContext db)
     {
         _db = db;
     }

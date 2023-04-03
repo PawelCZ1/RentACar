@@ -14,10 +14,10 @@ namespace RentACar.Controllers;
 public class ReservationController : ControllerBase
 {
     private APIResponse _response;
-    private readonly ApiDatabaseContext _db;
+    private readonly APIDatabaseContext _db;
     private readonly IMapper _mapper;
 
-    public ReservationController(ApiDatabaseContext db, IMapper mapper)
+    public ReservationController(APIDatabaseContext db, IMapper mapper)
     {
         _db = db;
         _mapper = mapper;
